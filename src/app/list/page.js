@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-const GENRES=["Ballet","Contemporary","Jazz & Tap","Cultural & Character","Acrobatics","Hip Hop","Musical Theatre"];
+const GENRES=["Ballet","Contemporary","Jazz & Tap","Cultural & Character","Acrobatics","Hip Hop","Musical Theatre","Duos & Trios","Group Costumes"];
 const CONDITIONS=["New with tags","Like new","Good","Fair"];
 const SIZES=["Age 2-4","Age 4-6","Age 6-8","Age 8-10","Age 10-12","Age 12-14","Adult XS","Adult S","Adult M","Adult L","Adult XL"];
 const STEPS=["Details","Photos","Pricing","Shipping","Review"];
@@ -13,7 +13,7 @@ export default function ListPage(){
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [step,setStep]=useState(0);
-  const [form,setForm]=useState({type:"used",title:"",genre:"",size:"",condition:"",desc:"",price:"",shipping:"both",location:""});
+  const [form,setForm]=useState({type:"used",title:"",genre:"",size:"",condition:"",desc:"",price:"",shipping:"both",location:"",featured:false});
   const [done,setDone]=useState(false);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   const inp={width:"100%",border:"1px solid #e5e5e5",borderRadius:10,padding:"12px 16px",fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
@@ -47,13 +47,13 @@ export default function ListPage(){
         <Link href="/login?redirect=/list" style={{display:"inline-block",background:"#800020",color:"white",fontWeight:700,padding:"14px 32px",borderRadius:10,textDecoration:"none",fontSize:15}}>Sign In or Create Account</Link>
       </div>
     );
-}
+  }
 
   if(done)return(
     <div style={{maxWidth:480,margin:"80px auto",textAlign:"center",padding:"0 24px"}}>
       <div style={{fontSize:64,marginBottom:24}}>🎉</div>
       <h1 style={{fontSize:28,fontWeight:800,color:"#4a0e2e",marginBottom:16}}>Listing Published!</h1>
-      <p style={{color:"#888",marginBottom:32,lineHeight:1.7}}>Your costume is now live across AU and NZ.</p>
+      <p style={{color:"#888",marginBottom:32,lineHeight:1.7}}>Your costume is now live across AU and NZ.{form.featured && ' Your listing is featured and will appear at the top of search results for 7 days.'}</p>
       <Link href="/browse" style={{background:"#800020",color:"white",fontWeight:700,padding:"14px 32px",borderRadius:10,textDecoration:"none",fontSize:15}}>Browse All Costumes</Link>
     </div>
   );
@@ -61,7 +61,8 @@ export default function ListPage(){
   return(
     <div style={{maxWidth:600,margin:"0 auto",padding:"40px 24px"}}>
       <h1 style={{fontSize:26,fontWeight:800,color:"#4a0e2e",marginBottom:4}}>List a Costume</h1>
-      <p style={{color:"#aaa",fontSize:14,marginBottom:32}}>Step {step+1} of {STEPS.length} \u2014 {STEPS[step]}</p>
+      <p style={{color:"#aaa",fontSize:14,marginBottom:32}}>Step {step+1} of {STEPS.length} — {STEPS[step]}</p>
+
       <div style={{display:"flex",alignItems:"center",marginBottom:40}}>
         {STEPS.map((s,i)=>[
           <div key={s} style={{width:32,height:32,borderRadius:"50%",background:i<=step?"#800020":"#e5e5e5",color:i<=step?"white":"#aaa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{i+1}</div>,
@@ -107,6 +108,19 @@ export default function ListPage(){
             <input type="number" value={form.price} onChange={e=>set("price",e.target.value)} placeholder="0.00" style={{...inp,paddingLeft:28}}/>
           </div>
           <p style={{fontSize:12,color:"#aaa"}}>Tip: pre-loved costumes sell for 30-60% of original price.</p>
+
+          {/* Featured Listing Option */}
+          <div style={{marginTop:16,border:form.featured?'2px solid #c49a2a':'2px solid #e5e5e5',borderRadius:12,padding:20,background:form.featured?'#fffbf0':'white',cursor:'pointer'}} onClick={()=>set('featured',!form.featured)}>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{width:24,height:24,borderRadius:6,border:form.featured?'none':'2px solid #ccc',background:form.featured?'#c49a2a':'white',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                {form.featured && <span style={{color:'white',fontSize:14,fontWeight:700}}>✓</span>}
+              </div>
+              <div>
+                <div style={{fontWeight:700,fontSize:15,color:'#4a0e2e'}}>⭐ Feature this listing — $5 NZD</div>
+                <p style={{fontSize:12,color:'#888',marginTop:4,lineHeight:1.5}}>Your listing appears first in search results with a gold highlight for 7 days. Get up to 3x more views!</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -129,12 +143,17 @@ export default function ListPage(){
         <div>
           <h3 style={{fontWeight:600,fontSize:16,marginBottom:20}}>Review your listing</h3>
           <div style={{background:"white",borderRadius:16,border:"1px solid #e8dcc8",padding:24}}>
-            {[["Type",form.type],["Title",form.title||"\u2014"],["Genre",form.genre||"\u2014"],["Size",form.size||"\u2014"],["Condition",form.condition||"\u2014"],["Price","$"+(form.price||"0")+" NZD"],["Shipping",form.shipping],["Location",form.location||"\u2014"]].map(([k,v])=>(
+            {[["Type",form.type],["Title",form.title||"\u2014"],["Genre",form.genre||"\u2014"],["Size",form.size||"\u2014"],["Condition",form.condition||"\u2014"],["Price","$"+(form.price||"0")+" NZD"],["Shipping",form.shipping],["Location",form.location||"\u2014"],["Featured",form.featured?"\u2B50 Yes (+$5 NZD)":"No"]].map(([k,v])=>(
               <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f5f5f5",fontSize:14}}>
-                <span style={{color:"#aaa"}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
+                <span style={{color:"#aaa"}}>{k}</span><span style={{fontWeight:600,color:k==="Featured"&&form.featured?"#c49a2a":"inherit"}}>{v}</span>
               </div>
             ))}
           </div>
+          {form.featured && (
+            <div style={{marginTop:16,padding:16,borderRadius:12,background:'#fffbf0',border:'1px solid #c49a2a'}}>
+              <p style={{fontSize:13,color:'#4a0e2e'}}><strong>⭐ Featured Listing:</strong> $5 NZD will be charged when your listing goes live. Your costume will appear at the top of browse results with a gold highlight for 7 days.</p>
+            </div>
+          )}
         </div>
       )}
 
