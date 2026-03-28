@@ -28,12 +28,12 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="flex flex-col items-start leading-none" style={{ textDecoration: 'none' }}>
-          <span className="text-white font-bold uppercase" style={{ fontSize: '1rem', letterSpacing: '0.12em' }}>
+          <span className="text-white font-bold uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
             Costume
           </span>
-          <span className="font-black uppercase" style={{ fontSize: '1.6rem', letterSpacing: '0.05em', marginTop: '-2px' }}>
+          <span className="font-black uppercase" style={{ fontSize: '2rem', letterSpacing: '0.02em', marginTop: '-4px', lineHeight: '1' }}>
             <span style={{ color: '#ffffff' }}>L</span>
-            <span style={{ color: '#c49a2a', fontSize: '2rem', position: 'relative', top: '1px' }}>∞</span>
+            <span style={{ color: '#c49a2a', fontSize: '2.4rem', position: 'relative', top: '2px' }}>∞</span>
             <span style={{ color: '#ffffff' }}>P</span>
           </span>
         </Link>
