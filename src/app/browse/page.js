@@ -6,13 +6,24 @@ import Link from 'next/link';
 
 const genres = ['Ballet', 'Contemporary', 'Jazz & Tap', 'Cultural & Character', 'Acrobatics', 'Hip Hop', 'Musical Theatre'];
 const conditions = ['New with tags', 'Like new', 'Good', 'Fair'];
+const listingTypes = ['Sell', 'Swap', 'Hire'];
 
-function FilterPanel({ selectedGenres, selectedConditions, maxPrice, toggleGenre, toggleCondition, setMaxPrice, onReset }) {
+function FilterPanel({ selectedGenres, selectedConditions, selectedTypes, maxPrice, toggleGenre, toggleCondition, toggleType, setMaxPrice, onReset }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold" style={{ color: '#4a0e2e' }}>Filters</h3>
         <button onClick={onReset} className="text-xs" style={{ color: '#800020' }}>Reset</button>
+      </div>
+
+      <div className="mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Type</p>
+        {listingTypes.map(t => (
+          <label key={t} className="flex items-center gap-2 text-sm py-1 cursor-pointer">
+            <input type="checkbox" checked={selectedTypes.includes(t)} onChange={() => toggleType(t)} className="rounded" />
+            {t}
+          </label>
+        ))}
       </div>
 
       <div className="mb-4">
@@ -36,7 +47,7 @@ function FilterPanel({ selectedGenres, selectedConditions, maxPrice, toggleGenre
       </div>
 
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Max Price: ${maxPrice}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Max Price: $${maxPrice} NZD</p>
         <input type="range" min={0} max={500} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} className="w-full" />
       </div>
     </div>
@@ -49,6 +60,7 @@ export default function BrowsePage() {
   const [search, setSearch] = useState('');
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [selectedConditions, setSelectedConditions] = useState([]);
+  const [selectedTypes, setSelectedTypes] = useState([]);
   const [maxPrice, setMaxPrice] = useState(500);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -78,21 +90,24 @@ export default function BrowsePage() {
       l.description?.toLowerCase().includes(q);
     const matchGenre = selectedGenres.length === 0 || selectedGenres.includes(l.genre);
     const matchCondition = selectedConditions.length === 0 || selectedConditions.includes(l.condition);
+    const matchType = selectedTypes.length === 0 || selectedTypes.map(t => t.toLowerCase()).includes(l.listing_type?.toLowerCase());
     const matchPrice = l.price <= maxPrice;
-    return matchSearch && matchGenre && matchCondition && matchPrice;
+    return matchSearch && matchGenre && matchCondition && matchType && matchPrice;
   });
 
   const toggleGenre = (g) => setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
   const toggleCondition = (c) => setSelectedConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
+  const toggleType = (t) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
 
   const resetFilters = () => {
     setSelectedGenres([]);
     setSelectedConditions([]);
+    setSelectedTypes([]);
     setMaxPrice(500);
     setSearch('');
   };
 
-  const activeFilterCount = selectedGenres.length + selectedConditions.length + (maxPrice < 500 ? 1 : 0);
+  const activeFilterCount = selectedGenres.length + selectedConditions.length + selectedTypes.length + (maxPrice < 500 ? 1 : 0);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#faf7f2' }}>
@@ -139,7 +154,7 @@ export default function BrowsePage() {
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm" style={{ color: '#800020' }}>{filtered.length} results</p>
 
-          {/* Mobile filter toggle — hidden on md and above */}
+          {/* Mobile filter toggle */}
           <button
             onClick={() => setFiltersOpen(true)}
             className="md:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border"
@@ -158,15 +173,17 @@ export default function BrowsePage() {
         </div>
 
         <div className="flex gap-6">
-          {/* Desktop sidebar — hidden on mobile, visible md and above */}
+          {/* Desktop sidebar */}
           <aside className="hidden md:block w-56 flex-shrink-0">
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <FilterPanel
                 selectedGenres={selectedGenres}
                 selectedConditions={selectedConditions}
+                selectedTypes={selectedTypes}
                 maxPrice={maxPrice}
                 toggleGenre={toggleGenre}
                 toggleCondition={toggleCondition}
+                toggleType={toggleType}
                 setMaxPrice={setMaxPrice}
                 onReset={resetFilters}
               />
@@ -194,11 +211,16 @@ export default function BrowsePage() {
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-1">
                           <h3 className="font-semibold text-sm" style={{ color: '#4a0e2e' }}>{listing.title}</h3>
-                          <span className="font-bold text-sm" style={{ color: '#800020' }}>${listing.price}</span>
+                          <span className="font-bold text-sm" style={{ color: '#800020' }}>${listing.price} NZD</span>
                         </div>
                         <p className="text-xs text-gray-500 mb-1">{listing.genre} · {listing.size}</p>
                         <p className="text-xs text-gray-400">📍 {listing.location}</p>
-                        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f2e8d5', color: '#800020' }}>{listing.condition}</span>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="inline-block text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f2e8d5', color: '#800020' }}>{listing.condition}</span>
+                          {listing.listing_type && (
+                            <span className="inline-block text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e8d5f2', color: '#4a0e2e' }}>{listing.listing_type}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -212,21 +234,15 @@ export default function BrowsePage() {
       {/* Mobile filter drawer */}
       {filtersOpen && (
         <>
-          {/* Dark backdrop */}
           <div
             className="fixed inset-0 z-40 md:hidden"
             style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
             onClick={() => setFiltersOpen(false)}
           />
-
-          {/* Bottom sheet */}
           <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-gray-300" />
             </div>
-
-            {/* Header */}
             <div className="flex justify-between items-center px-5 py-3 border-b">
               <h2 className="font-semibold text-lg" style={{ color: '#4a0e2e' }}>Filters</h2>
               <button onClick={() => setFiltersOpen(false)} className="text-gray-400 p-1">
@@ -235,21 +251,19 @@ export default function BrowsePage() {
                 </svg>
               </button>
             </div>
-
-            {/* Filter content */}
             <div className="px-5 py-4">
               <FilterPanel
                 selectedGenres={selectedGenres}
                 selectedConditions={selectedConditions}
+                selectedTypes={selectedTypes}
                 maxPrice={maxPrice}
                 toggleGenre={toggleGenre}
                 toggleCondition={toggleCondition}
+                toggleType={toggleType}
                 setMaxPrice={setMaxPrice}
                 onReset={resetFilters}
               />
             </div>
-
-            {/* Apply button */}
             <div className="px-5 pb-8 pt-2">
               <button
                 onClick={() => setFiltersOpen(false)}
