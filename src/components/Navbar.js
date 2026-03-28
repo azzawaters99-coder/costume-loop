@@ -33,19 +33,7 @@ export default function Navbar() {
           </span>
           <span className="font-black uppercase" style={{ fontSize: '2rem', letterSpacing: '0.02em', marginTop: '-4px', lineHeight: '1' }}>
             <span style={{ color: '#ffffff' }}>L</span>
-            <svg
-              viewBox="0 0 60 30"
-              style={{ display: 'inline-block', width: '1.6em', height: '0.8em', verticalAlign: 'middle', position: 'relative', top: '-1px' }}
-            >
-              <path
-                d="M15 7C10 7 6 11 6 15s4 8 9 8c4 0 7-2 9-5l2-3 2 3c2 3 5 5 9 5 5 0 9-4 9-8s-4-8-9-8c-4 0-7 2-9 5l-2 3-2-3c-2-3-5-5-9-5z"
-                fill="none"
-                stroke="#c49a2a"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <span style={{ color: '#c49a2a', fontSize: '2.4rem', position: 'relative', top: '2px' }}>∞</span>
             <span style={{ color: '#ffffff' }}>P</span>
           </span>
         </Link>
