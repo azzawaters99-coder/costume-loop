@@ -47,7 +47,7 @@ function FilterPanel({ selectedGenres, selectedConditions, selectedTypes, maxPri
       </div>
 
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Max Price: $${maxPrice} NZD</p>
+        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Max Price: ${maxPrice} NZD</p>
         <input type="range" min={0} max={500} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} className="w-full" />
       </div>
     </div>
@@ -62,10 +62,14 @@ export default function BrowsePage() {
   const [selectedConditions, setSelectedConditions] = useState([]);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [maxPrice, setMaxPrice] = useState(500);
+  const [sortBy, setSortBy] = useState('newest');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     fetchListings();
+    const params = new URLSearchParams(window.location.search);
+    const genre = params.get('genre');
+    if (genre) setSelectedGenres([genre]);
   }, []);
 
   async function fetchListings() {
@@ -75,7 +79,6 @@ export default function BrowsePage() {
       .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
-
     if (error) console.error(error);
     else setListings(data || []);
     setLoading(false);
@@ -93,6 +96,12 @@ export default function BrowsePage() {
     const matchType = selectedTypes.length === 0 || selectedTypes.map(t => t.toLowerCase()).includes(l.listing_type?.toLowerCase());
     const matchPrice = l.price <= maxPrice;
     return matchSearch && matchGenre && matchCondition && matchType && matchPrice;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'price_low') return (a.price || 0) - (b.price || 0);
+    if (sortBy === 'price_high') return (b.price || 0) - (a.price || 0);
+    return new Date(b.created_at) - new Date(a.created_at);
   });
 
   const toggleGenre = (g) => setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
@@ -116,12 +125,7 @@ export default function BrowsePage() {
         {/* Search bar */}
         <div className="mb-6">
           <div className="relative max-w-2xl mx-auto">
-            <svg
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5"
-              fill="none"
-              stroke="#800020"
-              viewBox="0 0 24 24"
-            >
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" fill="none" stroke="#800020" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -130,18 +134,10 @@ export default function BrowsePage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-12 pr-10 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 shadow-sm"
-              style={{
-                borderColor: '#e2d6c8',
-                backgroundColor: '#ffffff',
-                color: '#4a0e2e',
-                focusRingColor: '#800020',
-              }}
+              style={{ borderColor: '#e2d6c8', backgroundColor: '#ffffff', color: '#4a0e2e' }}
             />
             {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -150,26 +146,36 @@ export default function BrowsePage() {
           </div>
         </div>
 
-        {/* Results count + mobile filter button */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm" style={{ color: '#800020' }}>{filtered.length} results</p>
-
-          {/* Mobile filter toggle */}
-          <button
-            onClick={() => setFiltersOpen(true)}
-            className="md:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border"
-            style={{ borderColor: '#800020', color: '#800020' }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="text-white text-xs rounded-full px-1.5 py-0.5" style={{ backgroundColor: '#800020' }}>
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+        {/* Results count + sort + mobile filter */}
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <p className="text-sm" style={{ color: '#800020' }}>{sorted.length} results</p>
+          <div className="flex items-center gap-3">
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="text-sm border rounded-lg px-3 py-2 focus:outline-none"
+              style={{ borderColor: '#e2d6c8', color: '#4a0e2e', backgroundColor: 'white' }}
+            >
+              <option value="newest">Newest first</option>
+              <option value="price_low">Price: Low to High</option>
+              <option value="price_high">Price: High to Low</option>
+            </select>
+            <button
+              onClick={() => setFiltersOpen(true)}
+              className="md:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border"
+              style={{ borderColor: '#800020', color: '#800020' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="text-white text-xs rounded-full px-1.5 py-0.5" style={{ backgroundColor: '#800020' }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-6">
@@ -194,11 +200,11 @@ export default function BrowsePage() {
           <main className="flex-1">
             {loading ? (
               <div className="text-center py-20 text-gray-400">Loading listings...</div>
-            ) : filtered.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <div className="text-center py-20 text-gray-400">No listings found.</div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map(listing => (
+                {sorted.map(listing => (
                   <Link key={listing.id} href={`/listings/${listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer" style={{ height: '100%' }}>
                       <div className="h-48 flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#f2e8d5' }}>
@@ -234,11 +240,7 @@ export default function BrowsePage() {
       {/* Mobile filter drawer */}
       {filtersOpen && (
         <>
-          <div
-            className="fixed inset-0 z-40 md:hidden"
-            style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
-            onClick={() => setFiltersOpen(false)}
-          />
+          <div className="fixed inset-0 z-40 md:hidden" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={() => setFiltersOpen(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-gray-300" />
@@ -270,7 +272,7 @@ export default function BrowsePage() {
                 className="w-full py-3 rounded-xl text-white font-semibold"
                 style={{ backgroundColor: '#800020' }}
               >
-                Show {filtered.length} results
+                Show {sorted.length} results
               </button>
             </div>
           </div>
