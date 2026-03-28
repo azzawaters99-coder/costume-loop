@@ -44,10 +44,10 @@ export default function ListPage(){
         <div style={{fontSize:64,marginBottom:24}}>🔒</div>
         <h1 style={{fontSize:28,fontWeight:800,color:"#4a0e2e",marginBottom:16}}>Sign In to List a Costume</h1>
         <p style={{color:"#888",marginBottom:32,lineHeight:1.7}}>You need to be signed in before you can list a costume for sale.</p>
-        <Link href="/login" style={{display:"inline-block",background:"#800020",color:"white",fontWeight:700,padding:"14px 32px",borderRadius:10,textDecoration:"none",fontSize:15}}>Sign In or Create Account</Link>
+        <Link href="/login?redirect=/list" style={{display:"inline-block",background:"#800020",color:"white",fontWeight:700,padding:"14px 32px",borderRadius:10,textDecoration:"none",fontSize:15}}>Sign In or Create Account</Link>
       </div>
     );
-  }
+}
 
   if(done)return(
     <div style={{maxWidth:480,margin:"80px auto",textAlign:"center",padding:"0 24px"}}>
@@ -61,7 +61,7 @@ export default function ListPage(){
   return(
     <div style={{maxWidth:600,margin:"0 auto",padding:"40px 24px"}}>
       <h1 style={{fontSize:26,fontWeight:800,color:"#4a0e2e",marginBottom:4}}>List a Costume</h1>
-      <p style={{color:"#aaa",fontSize:14,marginBottom:32}}>Step {step+1} of {STEPS.length} — {STEPS[step]}</p>
+      <p style={{color:"#aaa",fontSize:14,marginBottom:32}}>Step {step+1} of {STEPS.length} \u2014 {STEPS[step]}</p>
       <div style={{display:"flex",alignItems:"center",marginBottom:40}}>
         {STEPS.map((s,i)=>[
           <div key={s} style={{width:32,height:32,borderRadius:"50%",background:i<=step?"#800020":"#e5e5e5",color:i<=step?"white":"#aaa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{i+1}</div>,
@@ -129,7 +129,7 @@ export default function ListPage(){
         <div>
           <h3 style={{fontWeight:600,fontSize:16,marginBottom:20}}>Review your listing</h3>
           <div style={{background:"white",borderRadius:16,border:"1px solid #e8dcc8",padding:24}}>
-            {[["Type",form.type],["Title",form.title||"—"],["Genre",form.genre||"—"],["Size",form.size||"—"],["Condition",form.condition||"—"],["Price","$"+(form.price||"0")+" NZD"],["Shipping",form.shipping],["Location",form.location||"—"]].map(([k,v])=>(
+            {[["Type",form.type],["Title",form.title||"\u2014"],["Genre",form.genre||"\u2014"],["Size",form.size||"\u2014"],["Condition",form.condition||"\u2014"],["Price","$"+(form.price||"0")+" NZD"],["Shipping",form.shipping],["Location",form.location||"\u2014"]].map(([k,v])=>(
               <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f5f5f5",fontSize:14}}>
                 <span style={{color:"#aaa"}}>{k}</span><span style={{fontWeight:600}}>{v}</span>
               </div>
