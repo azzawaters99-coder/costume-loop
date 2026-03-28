@@ -14,6 +14,7 @@ function FilterPanel({ selectedGenres, selectedConditions, maxPrice, toggleGenre
         <h3 className="font-semibold" style={{ color: '#4a0e2e' }}>Filters</h3>
         <button onClick={onReset} className="text-xs" style={{ color: '#800020' }}>Reset</button>
       </div>
+
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Genre</p>
         {genres.map(g => (
@@ -23,6 +24,7 @@ function FilterPanel({ selectedGenres, selectedConditions, maxPrice, toggleGenre
           </label>
         ))}
       </div>
+
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Condition</p>
         {conditions.map(c => (
@@ -32,6 +34,7 @@ function FilterPanel({ selectedGenres, selectedConditions, maxPrice, toggleGenre
           </label>
         ))}
       </div>
+
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Max Price: ${maxPrice}</p>
         <input type="range" min={0} max={500} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} className="w-full" />
@@ -49,7 +52,9 @@ export default function BrowsePage() {
   const [maxPrice, setMaxPrice] = useState(500);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  useEffect(() => { fetchListings(); }, []);
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   async function fetchListings() {
     setLoading(true);
@@ -58,13 +63,19 @@ export default function BrowsePage() {
       .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
+
     if (error) console.error(error);
     else setListings(data || []);
     setLoading(false);
   }
 
   const filtered = listings.filter(l => {
-    const matchSearch = !search || l.title.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchSearch = !search ||
+      l.title?.toLowerCase().includes(q) ||
+      l.genre?.toLowerCase().includes(q) ||
+      l.location?.toLowerCase().includes(q) ||
+      l.description?.toLowerCase().includes(q);
     const matchGenre = selectedGenres.length === 0 || selectedGenres.includes(l.genre);
     const matchCondition = selectedConditions.length === 0 || selectedConditions.includes(l.condition);
     const matchPrice = l.price <= maxPrice;
@@ -73,13 +84,56 @@ export default function BrowsePage() {
 
   const toggleGenre = (g) => setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
   const toggleCondition = (c) => setSelectedConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
-  const resetFilters = () => { setSelectedGenres([]); setSelectedConditions([]); setMaxPrice(500); };
+
+  const resetFilters = () => {
+    setSelectedGenres([]);
+    setSelectedConditions([]);
+    setMaxPrice(500);
+    setSearch('');
+  };
 
   const activeFilterCount = selectedGenres.length + selectedConditions.length + (maxPrice < 500 ? 1 : 0);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#faf7f2' }}>
       <div className="max-w-7xl mx-auto px-4 py-8">
+
+        {/* Search bar */}
+        <div className="mb-6">
+          <div className="relative max-w-2xl mx-auto">
+            <svg
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5"
+              fill="none"
+              stroke="#800020"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search costumes by name, genre, location..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-12 pr-10 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 shadow-sm"
+              style={{
+                borderColor: '#e2d6c8',
+                backgroundColor: '#ffffff',
+                color: '#4a0e2e',
+                focusRingColor: '#800020',
+              }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Results count + mobile filter button */}
         <div className="flex items-center justify-between mb-4">
@@ -92,8 +146,7 @@ export default function BrowsePage() {
             style={{ borderColor: '#800020', color: '#800020' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
             </svg>
             Filters
             {activeFilterCount > 0 && (
@@ -105,7 +158,6 @@ export default function BrowsePage() {
         </div>
 
         <div className="flex gap-6">
-
           {/* Desktop sidebar — hidden on mobile, visible md and above */}
           <aside className="hidden md:block w-56 flex-shrink-0">
             <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -169,7 +221,6 @@ export default function BrowsePage() {
 
           {/* Bottom sheet */}
           <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
-
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-gray-300" />
