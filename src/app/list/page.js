@@ -1,16 +1,54 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
 const GENRES=["Ballet","Contemporary","Jazz & Tap","Cultural & Character","Acrobatics","Hip Hop","Musical Theatre"];
 const CONDITIONS=["New with tags","Like new","Good","Fair"];
 const SIZES=["Age 2-4","Age 4-6","Age 6-8","Age 8-10","Age 10-12","Age 12-14","Adult XS","Adult S","Adult M","Adult L","Adult XL"];
 const STEPS=["Details","Photos","Pricing","Shipping","Review"];
+
 export default function ListPage(){
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [step,setStep]=useState(0);
   const [form,setForm]=useState({type:"used",title:"",genre:"",size:"",condition:"",desc:"",price:"",shipping:"both",location:""});
   const [done,setDone]=useState(false);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   const inp={width:"100%",border:"1px solid #e5e5e5",borderRadius:10,padding:"12px 16px",fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (authLoading) {
+    return (
+      <div style={{minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <p style={{color:'#aaa'}}>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{maxWidth:480,margin:"80px auto",textAlign:"center",padding:"0 24px"}}>
+        <div style={{fontSize:64,marginBottom:24}}>🔒</div>
+        <h1 style={{fontSize:28,fontWeight:800,color:"#4a0e2e",marginBottom:16}}>Sign In to List a Costume</h1>
+        <p style={{color:"#888",marginBottom:32,lineHeight:1.7}}>You need to be signed in before you can list a costume for sale.</p>
+        <Link href="/login" style={{display:"inline-block",background:"#800020",color:"white",fontWeight:700,padding:"14px 32px",borderRadius:10,textDecoration:"none",fontSize:15}}>Sign In or Create Account</Link>
+      </div>
+    );
+  }
+
   if(done)return(
     <div style={{maxWidth:480,margin:"80px auto",textAlign:"center",padding:"0 24px"}}>
       <div style={{fontSize:64,marginBottom:24}}>🎉</div>
@@ -19,6 +57,7 @@ export default function ListPage(){
       <Link href="/browse" style={{background:"#800020",color:"white",fontWeight:700,padding:"14px 32px",borderRadius:10,textDecoration:"none",fontSize:15}}>Browse All Costumes</Link>
     </div>
   );
+
   return(
     <div style={{maxWidth:600,margin:"0 auto",padding:"40px 24px"}}>
       <h1 style={{fontSize:26,fontWeight:800,color:"#4a0e2e",marginBottom:4}}>List a Costume</h1>
@@ -29,6 +68,7 @@ export default function ListPage(){
           i<STEPS.length-1&&<div key={s+"l"} style={{flex:1,height:2,background:i<step?"#800020":"#e5e5e5"}}/>
         ])}
       </div>
+
       {step===0&&(
         <div style={{display:"flex",flexDirection:"column",gap:20}}>
           <div>
@@ -49,6 +89,7 @@ export default function ListPage(){
           <div><label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Description</label><textarea value={form.desc} onChange={e=>set("desc",e.target.value)} rows={4} placeholder="Describe the costume..." style={{...inp,resize:"none"}}/></div>
         </div>
       )}
+
       {step===1&&(
         <div style={{border:"2px dashed #e8dcc8",borderRadius:16,padding:60,textAlign:"center",background:"#faf7f2"}}>
           <div style={{fontSize:52,marginBottom:16}}>📷</div>
@@ -57,6 +98,7 @@ export default function ListPage(){
           <button style={{background:"#800020",color:"white",padding:"10px 24px",borderRadius:8,border:"none",fontWeight:600,cursor:"pointer"}}>Choose Photos</button>
         </div>
       )}
+
       {step===2&&(
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
           <label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Price (NZD)</label>
@@ -67,6 +109,7 @@ export default function ListPage(){
           <p style={{fontSize:12,color:"#aaa"}}>Tip: pre-loved costumes sell for 30-60% of original price.</p>
         </div>
       )}
+
       {step===3&&(
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           {[{v:"ship",l:"Ship to buyer",d:"Use a tracked courier"},{v:"pickup",l:"Local pickup only",d:"Buyer collects from you"},{v:"both",l:"Ship or pickup",d:"Buyer chooses"}].map(o=>(
@@ -81,6 +124,7 @@ export default function ListPage(){
           </div>
         </div>
       )}
+
       {step===4&&(
         <div>
           <h3 style={{fontWeight:600,fontSize:16,marginBottom:20}}>Review your listing</h3>
@@ -93,6 +137,7 @@ export default function ListPage(){
           </div>
         </div>
       )}
+
       <div style={{display:"flex",justifyContent:"space-between",marginTop:36}}>
         {step>0?<button onClick={()=>setStep(s=>s-1)} style={{padding:"12px 24px",borderRadius:10,border:"1px solid #e5e5e5",background:"white",fontSize:14,fontWeight:600,cursor:"pointer"}}>Back</button>:<div/>}
         {step<STEPS.length-1
