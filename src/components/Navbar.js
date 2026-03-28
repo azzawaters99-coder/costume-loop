@@ -33,7 +33,7 @@ export default function Navbar() {
           </span>
           <span className="font-black uppercase" style={{ fontSize: '1.6rem', letterSpacing: '0.25em', marginTop: '-2px' }}>
             <span style={{ color: '#ffffff' }}>L</span>
-            <span style={{ color: '#c49a2a' }}>∞∞</span>
+            <span style={{ color: '#c49a2a' }}>∞</span>
             <span style={{ color: '#ffffff' }}>P</span>
           </span>
         </Link>
