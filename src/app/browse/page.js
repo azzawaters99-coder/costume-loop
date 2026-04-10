@@ -1,283 +1,186 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-const genres = ['Ballet', 'Contemporary', 'Jazz & Tap', 'Cultural & Character', 'Acrobatics', 'Hip Hop', 'Musical Theatre', 'Duos & Trios', 'Group Costumes'];
-const conditions = ['New with tags', 'Like new', 'Good', 'Fair'];
-const listingTypes = ['Sell', 'Swap', 'Hire'];
-
-function FilterPanel({ selectedGenres, selectedConditions, selectedTypes, maxPrice, toggleGenre, toggleCondition, toggleType, setMaxPrice, onReset }) {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold" style={{ color: '#4a0e2e' }}>Filters</h3>
-        <button onClick={onReset} className="text-xs" style={{ color: '#800020' }}>Reset</button>
-      </div>
-
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Type</p>
-        {listingTypes.map(t => (
-          <label key={t} className="flex items-center gap-2 text-sm py-1 cursor-pointer">
-            <input type="checkbox" checked={selectedTypes.includes(t)} onChange={() => toggleType(t)} className="rounded" />
-            {t}
-          </label>
-        ))}
-      </div>
-
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Genre</p>
-        {genres.map(g => (
-          <label key={g} className="flex items-center gap-2 text-sm py-1 cursor-pointer">
-            <input type="checkbox" checked={selectedGenres.includes(g)} onChange={() => toggleGenre(g)} className="rounded" />
-            {g}
-          </label>
-        ))}
-      </div>
-
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Condition</p>
-        {conditions.map(c => (
-          <label key={c} className="flex items-center gap-2 text-sm py-1 cursor-pointer">
-            <input type="checkbox" checked={selectedConditions.includes(c)} onChange={() => toggleCondition(c)} className="rounded" />
-            {c}
-          </label>
-        ))}
-      </div>
-
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a0e2e' }}>Max Price: ${maxPrice} NZD</p>
-        <input type="range" min={0} max={500} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} className="w-full" />
-      </div>
-    </div>
-  );
-}
+const GENRES = ['All','Ballet','Contemporary','Jazz & Tap','Cultural & Character','Acrobatics','Hip Hop','Musical Theatre','Duos & Trios','Group Costumes'];
+const SIZES = ['All','Age 2-4','Age 4-6','Age 6-8','Age 8-10','Age 10-12','Age 12-14','Adult XS','Adult S','Adult M','Adult L','Adult XL'];
 
 export default function BrowsePage() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [listingTab, setListingTab] = useState('all'); // 'all' | 'sale' | 'rental'
+  const [genre, setGenre] = useState('All');
+  const [size, setSize] = useState('All');
   const [search, setSearch] = useState('');
-  const [selectedGenres, setSelectedGenres] = useState([]);
-  const [selectedConditions, setSelectedConditions] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
-  const [maxPrice, setMaxPrice] = useState(500);
-  const [sortBy, setSortBy] = useState('newest');
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
+    async function fetchListings() {
+      setLoading(true);
+      let query = supabase
+        .from('listings')
+        .select('*')
+        .order('featured', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (listingTab === 'sale') {
+        query = query.or('listing_type.eq.sale,listing_type.is.null');
+      } else if (listingTab === 'rental') {
+        query = query.eq('listing_type', 'rental');
+      }
+
+      if (genre !== 'All') query = query.eq('genre', genre);
+      if (size !== 'All') query = query.eq('size', size);
+
+      const { data, error } = await query;
+      if (error) { console.error(error); setLoading(false); return; }
+      setListings(data || []);
+      setLoading(false);
+    }
     fetchListings();
-    const params = new URLSearchParams(window.location.search);
-    const genre = params.get('genre');
-    if (genre) setSelectedGenres([genre]);
-  }, []);
+  }, [listingTab, genre, size]);
 
-  async function fetchListings() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
-    if (error) console.error(error);
-    else setListings(data || []);
-    setLoading(false);
-  }
-
-  const filtered = listings.filter(l => {
-    const q = search.toLowerCase();
-    const matchSearch = !search ||
-      l.title?.toLowerCase().includes(q) ||
-      l.genre?.toLowerCase().includes(q) ||
-      l.location?.toLowerCase().includes(q) ||
-      l.description?.toLowerCase().includes(q);
-    const matchGenre = selectedGenres.length === 0 || selectedGenres.includes(l.genre);
-    const matchCondition = selectedConditions.length === 0 || selectedConditions.includes(l.condition);
-    const matchType = selectedTypes.length === 0 || selectedTypes.map(t => t.toLowerCase()).includes(l.listing_type?.toLowerCase());
-    const matchPrice = l.price <= maxPrice;
-    return matchSearch && matchGenre && matchCondition && matchType && matchPrice;
-  });
-
-  const sorted = [...filtered].sort((a, b) => { if (a.featured && !b.featured) return -1; if (!a.featured && b.featured) return 1;
-    if (sortBy === 'price_low') return (a.price || 0) - (b.price || 0);
-    if (sortBy === 'price_high') return (b.price || 0) - (a.price || 0);
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
-
-  const toggleGenre = (g) => setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
-  const toggleCondition = (c) => setSelectedConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
-  const toggleType = (t) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
-
-  const resetFilters = () => {
-    setSelectedGenres([]);
-    setSelectedConditions([]);
-    setSelectedTypes([]);
-    setMaxPrice(500);
-    setSearch('');
-  };
-
-  const activeFilterCount = selectedGenres.length + selectedConditions.length + selectedTypes.length + (maxPrice < 500 ? 1 : 0);
+  const filtered = listings.filter(l =>
+    !search || l.title?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#faf7f2' }}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div style={{ minHeight: '100vh', backgroundColor: '#faf7f2' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
 
-        {/* Search bar */}
-        <div className="mb-6">
-          <div className="relative max-w-2xl mx-auto">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" fill="none" stroke="#800020" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search costumes by name, genre, location..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-12 pr-10 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 shadow-sm"
-              style={{ borderColor: '#e2d6c8', backgroundColor: '#ffffff', color: '#4a0e2e' }}
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#4a0e2e', marginBottom: 4 }}>Browse Costumes</h1>
+          <p style={{ color: '#888', fontSize: 14 }}>Find pre-loved dance costumes across AU & NZ</p>
         </div>
 
-        {/* Results count + sort + mobile filter */}
-        <div className="flex items-center justify-between mb-4 gap-3">
-          <p className="text-sm" style={{ color: '#800020' }}>{sorted.length} results</p>
-          <div className="flex items-center gap-3">
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="text-sm border rounded-lg px-3 py-2 focus:outline-none"
-              style={{ borderColor: '#e2d6c8', color: '#4a0e2e', backgroundColor: 'white' }}
-            >
-              <option value="newest">Newest first</option>
-              <option value="price_low">Price: Low to High</option>
-              <option value="price_high">Price: High to Low</option>
-            </select>
+        {/* Sale / Rental tab toggle */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 24, background: '#f2e8d5', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+          {[
+            { val: 'all', label: '✨ All' },
+            { val: 'sale', label: '🏷️ For Sale' },
+            { val: 'rental', label: '🔄 For Rent' },
+          ].map(tab => (
             <button
-              onClick={() => setFiltersOpen(true)}
-              className="md:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border"
-              style={{ borderColor: '#800020', color: '#800020' }}
+              key={tab.val}
+              onClick={() => setListingTab(tab.val)}
+              style={{
+                padding: '8px 20px',
+                borderRadius: 9,
+                border: 'none',
+                background: listingTab === tab.val ? 'white' : 'transparent',
+                color: listingTab === tab.val ? '#4a0e2e' : '#888',
+                fontWeight: listingTab === tab.val ? 700 : 500,
+                fontSize: 14,
+                cursor: 'pointer',
+                boxShadow: listingTab === tab.val ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+                transition: 'all 0.15s',
+              }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-              </svg>
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="text-white text-xs rounded-full px-1.5 py-0.5" style={{ backgroundColor: '#800020' }}>
-                  {activeFilterCount}
-                </span>
-              )}
+              {tab.label}
             </button>
-          </div>
+          ))}
         </div>
 
-        <div className="flex gap-6">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:block w-56 flex-shrink-0">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <FilterPanel
-                selectedGenres={selectedGenres}
-                selectedConditions={selectedConditions}
-                selectedTypes={selectedTypes}
-                maxPrice={maxPrice}
-                toggleGenre={toggleGenre}
-                toggleCondition={toggleCondition}
-                toggleType={toggleType}
-                setMaxPrice={setMaxPrice}
-                onReset={resetFilters}
-              />
-            </div>
-          </aside>
+        {/* Filters row */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1 1 220px' }}>
+            <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#aaa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search costumes..." style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 10, border: '1px solid #e5e5e5', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+          </div>
+          <select value={genre} onChange={e => setGenre(e.target.value)} style={{ flex: '0 1 180px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e5e5', fontSize: 14, background: 'white', outline: 'none', cursor: 'pointer' }}>
+            {GENRES.map(g => <option key={g}>{g}</option>)}
+          </select>
+          <select value={size} onChange={e => setSize(e.target.value)} style={{ flex: '0 1 160px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e5e5', fontSize: 14, background: 'white', outline: 'none', cursor: 'pointer' }}>
+            {SIZES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
 
-          {/* Listings grid */}
-          <main className="flex-1">
-            {loading ? (
-              <div className="text-center py-20 text-gray-400">Loading listings...</div>
-            ) : sorted.length === 0 ? (
-              <div className="text-center py-20 text-gray-400">No listings found.</div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sorted.map(listing => (
-                  <Link key={listing.id} href={`/listings/${listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-                    <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer" style={{ height: '100%' }}>
-                      <div className="h-48 flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#f2e8d5' }}>
-                        {listing.images && listing.images.length > 0 ? (
-                          <img src={listing.images[0]} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <span className="text-5xl">👗</span>
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-semibold text-sm" style={{ color: '#4a0e2e' }}>{listing.title}</h3>
-                          <span className="font-bold text-sm" style={{ color: '#800020' }}>${listing.price} NZD</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-1">{listing.genre} · {listing.size}</p>
-                        <p className="text-xs text-gray-400">📍 {listing.location}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-block text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f2e8d5', color: '#800020' }}>{listing.condition}</span>
-                          {listing.listing_type && (
-                            <span className="inline-block text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e8d5f2', color: '#4a0e2e' }}>{listing.listing_type}</span>
-                          )}
-                        </div>
+        {!loading && (
+          <p style={{ fontSize: 13, color: '#aaa', marginBottom: 20 }}>
+            {filtered.length} {filtered.length === 1 ? 'costume' : 'costumes'} found
+            {listingTab === 'rental' && ' available to rent'}
+            {listingTab === 'sale' && ' for sale'}
+          </p>
+        )}
+
+        {loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} style={{ borderRadius: 16, background: '#f2e8d5', height: 320 }} />
+            ))}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <div style={{ fontSize: 56, marginBottom: 16 }}>{listingTab === 'rental' ? '🔄' : '👗'}</div>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: '#4a0e2e', marginBottom: 8 }}>
+              {listingTab === 'rental' ? 'No rental costumes yet' : 'No costumes found'}
+            </h3>
+            <p style={{ color: '#888', fontSize: 14, marginBottom: 28 }}>
+              {listingTab === 'rental' ? 'Be the first to list a costume for rent!' : 'Try adjusting your filters or search.'}
+            </p>
+            <Link href="/list" style={{ background: '#800020', color: 'white', padding: '12px 28px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>List a Costume</Link>
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+            {filtered.map(listing => {
+              const isRental = listing.listing_type === 'rental';
+              const images = listing.images || [];
+              return (
+                <Link key={listing.id} href={`/listings/${listing.id}`} style={{ textDecoration: 'none' }}>
+                  <div
+                    style={{ borderRadius: 16, overflow: 'hidden', background: 'white', boxShadow: '0 2px 12px rgba(74,14,46,0.07)', border: listing.featured ? '2px solid #c49a2a' : '1px solid #f0e8d8', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(74,14,46,0.13)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(74,14,46,0.07)'; }}
+                  >
+                    <div style={{ aspectRatio: '1', backgroundColor: '#f2e8d5', position: 'relative', overflow: 'hidden' }}>
+                      {images.length > 0
+                        ? <img src={images[0]} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>👗</div>
+                      }
+                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {listing.featured && <span style={{ background: '#c49a2a', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>⭐ Featured</span>}
+                        {isRental && <span style={{ background: '#2e7d32', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>🔄 Rent</span>}
+                        {!isRental && <span style={{ background: '#800020', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>🏷️ Sale</span>}
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </main>
-        </div>
-      </div>
 
-      {/* Mobile filter drawer */}
-      {filtersOpen && (
-        <>
-          <div className="fixed inset-0 z-40 md:hidden" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={() => setFiltersOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-gray-300" />
-            </div>
-            <div className="flex justify-between items-center px-5 py-3 border-b">
-              <h2 className="font-semibold text-lg" style={{ color: '#4a0e2e' }}>Filters</h2>
-              <button onClick={() => setFiltersOpen(false)} className="text-gray-400 p-1">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="px-5 py-4">
-              <FilterPanel
-                selectedGenres={selectedGenres}
-                selectedConditions={selectedConditions}
-                selectedTypes={selectedTypes}
-                maxPrice={maxPrice}
-                toggleGenre={toggleGenre}
-                toggleCondition={toggleCondition}
-                toggleType={toggleType}
-                setMaxPrice={setMaxPrice}
-                onReset={resetFilters}
-              />
-            </div>
-            <div className="px-5 pb-8 pt-2">
-              <button
-                onClick={() => setFiltersOpen(false)}
-                className="w-full py-3 rounded-xl text-white font-semibold"
-                style={{ backgroundColor: '#800020' }}
-              >
-                Show {sorted.length} results
-              </button>
-            </div>
+                    <div style={{ padding: '14px 16px' }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: '#4a0e2e', marginBottom: 4, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {listing.title}
+                      </h3>
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                        {listing.genre && <span style={{ fontSize: 11, color: '#888', background: '#f5f0ea', padding: '2px 8px', borderRadius: 10 }}>{listing.genre}</span>}
+                        {listing.size && <span style={{ fontSize: 11, color: '#888', background: '#f5f0ea', padding: '2px 8px', borderRadius: 10 }}>{listing.size}</span>}
+                      </div>
+                      {isRental ? (
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: '#2e7d32' }}>
+                            ${listing.rental_price_per_week}
+                            <span style={{ fontSize: 11, fontWeight: 500, color: '#888' }}> NZD/wk</span>
+                          </p>
+                          {listing.rental_min_weeks > 1 && <p style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>Min. {listing.rental_min_weeks} wks</p>}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: 16, fontWeight: 800, color: '#800020' }}>
+                          ${listing.price}
+                          <span style={{ fontSize: 11, fontWeight: 500, color: '#888' }}> NZD</span>
+                        </p>
+                      )}
+                      {listing.location && <p style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>📍 {listing.location}</p>}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }
