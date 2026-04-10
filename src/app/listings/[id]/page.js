@@ -1,186 +1,341 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-const GENRES = ['All','Ballet','Contemporary','Jazz & Tap','Cultural & Character','Acrobatics','Hip Hop','Musical Theatre','Duos & Trios','Group Costumes'];
-const SIZES = ['All','Age 2-4','Age 4-6','Age 6-8','Age 8-10','Age 10-12','Age 12-14','Adult XS','Adult S','Adult M','Adult L','Adult XL'];
-
-export default function BrowsePage() {
-  const [listings, setListings] = useState([]);
+export default function ListingDetail() {
+  const { id } = useParams();
+  const [listing, setListing] = useState(null);
+  const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [listingTab, setListingTab] = useState('all'); // 'all' | 'sale' | 'rental'
-  const [genre, setGenre] = useState('All');
-  const [size, setSize] = useState('All');
-  const [search, setSearch] = useState('');
+  const [activeImage, setActiveImage] = useState(0);
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [enquiryName, setEnquiryName] = useState('');
+  const [enquiryEmail, setEnquiryEmail] = useState('');
+  const [enquiryMessage, setEnquiryMessage] = useState('');
+  const [enquirySent, setEnquirySent] = useState(false);
 
   useEffect(() => {
-    async function fetchListings() {
+    if (!id) return;
+    async function fetchListing() {
       setLoading(true);
-      let query = supabase
+      const { data, error } = await supabase
         .from('listings')
         .select('*')
-        .order('featured', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (listingTab === 'sale') {
-        query = query.or('listing_type.eq.sale,listing_type.is.null');
-      } else if (listingTab === 'rental') {
-        query = query.eq('listing_type', 'rental');
-      }
-
-      if (genre !== 'All') query = query.eq('genre', genre);
-      if (size !== 'All') query = query.eq('size', size);
-
-      const { data, error } = await query;
+        .eq('id', id)
+        .single();
       if (error) { console.error(error); setLoading(false); return; }
-      setListings(data || []);
+      setListing(data);
+      if (data?.user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, location')
+          .eq('id', data.user_id)
+          .single();
+        setSeller(profile || { full_name: data.seller_name || 'Costume Loop Seller' });
+      }
       setLoading(false);
     }
-    fetchListings();
-  }, [listingTab, genre, size]);
+    fetchListing();
+  }, [id]);
 
-  const filtered = listings.filter(l =>
-    !search || l.title?.toLowerCase().includes(search.toLowerCase())
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#faf7f2' }}>
+      <p className="text-gray-400">Loading listing...</p>
+    </div>
   );
 
+  if (!listing) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: '#faf7f2' }}>
+      <p style={{ fontSize: 48 }}>😕</p>
+      <h1 className="text-xl font-bold" style={{ color: '#4a0e2e' }}>Listing not found</h1>
+      <Link href="/browse" className="text-sm underline" style={{ color: '#800020' }}>Back to Browse</Link>
+    </div>
+  );
+
+  const images = listing.images || [];
+  const sellerName = seller?.full_name || listing.seller_name || 'Costume Loop Seller';
+  const isRental = listing.listing_type === 'rental';
+
+  // Build a mailto link for rental enquiries
+  const sellerEmail = seller?.email || '';
+  const mailtoSubject = encodeURIComponent(`Rental enquiry: ${listing.title}`);
+  const mailtoBody = encodeURIComponent(
+    `Hi,\n\nI'm interested in renting your costume: "${listing.title}".\n\nCould you let me know more about availability and how to arrange the rental?\n\nThanks!`
+  );
+  const mailtoLink = sellerEmail
+    ? `mailto:${sellerEmail}?subject=${mailtoSubject}&body=${mailtoBody}`
+    : null;
+
+  function handleEnquirySubmit(e) {
+    e.preventDefault();
+    // In a real implementation, this would send via an API route or Supabase edge function.
+    // For now we open a mailto as fallback.
+    const body = encodeURIComponent(
+      `Hi,\n\nMy name is ${enquiryName}.\n\n${enquiryMessage}\n\nYou can reach me at: ${enquiryEmail}`
+    );
+    window.location.href = `mailto:${sellerEmail || ''}?subject=${mailtoSubject}&body=${body}`;
+    setEnquirySent(true);
+    setEnquiryOpen(false);
+  }
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#faf7f2' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#faf7f2' }}>
+      <div className="max-w-5xl mx-auto px-4 py-8">
 
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#4a0e2e', marginBottom: 4 }}>Browse Costumes</h1>
-          <p style={{ color: '#888', fontSize: 14 }}>Find pre-loved dance costumes across AU & NZ</p>
-        </div>
+        {/* Back link */}
+        <Link href="/browse" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: '#800020', textDecoration: 'none' }}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Browse
+        </Link>
 
-        {/* Sale / Rental tab toggle */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 24, background: '#f2e8d5', borderRadius: 12, padding: 4, width: 'fit-content' }}>
-          {[
-            { val: 'all', label: '✨ All' },
-            { val: 'sale', label: '🏷️ For Sale' },
-            { val: 'rental', label: '🔄 For Rent' },
-          ].map(tab => (
-            <button
-              key={tab.val}
-              onClick={() => setListingTab(tab.val)}
-              style={{
-                padding: '8px 20px',
-                borderRadius: 9,
-                border: 'none',
-                background: listingTab === tab.val ? 'white' : 'transparent',
-                color: listingTab === tab.val ? '#4a0e2e' : '#888',
-                fontWeight: listingTab === tab.val ? 700 : 500,
-                fontSize: 14,
-                cursor: 'pointer',
-                boxShadow: listingTab === tab.val ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-                transition: 'all 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <div className="flex flex-col md:flex-row gap-8">
 
-        {/* Filters row */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 220px' }}>
-            <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#aaa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search costumes..." style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 10, border: '1px solid #e5e5e5', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+          {/* Image gallery */}
+          <div className="md:w-1/2">
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#f2e8d5', aspectRatio: '1' }}>
+              {images.length > 0 ? (
+                <img src={images[activeImage]} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span style={{ fontSize: 80 }}>👗</span>
+                </div>
+              )}
+            </div>
+            {images.length > 1 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto">
+                {images.map((img, i) => (
+                  <button key={i} onClick={() => setActiveImage(i)} className="rounded-lg overflow-hidden flex-shrink-0" style={{ width: 64, height: 64, border: i === activeImage ? '2px solid #800020' : '2px solid transparent', opacity: i === activeImage ? 1 : 0.6 }}>
+                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <select value={genre} onChange={e => setGenre(e.target.value)} style={{ flex: '0 1 180px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e5e5', fontSize: 14, background: 'white', outline: 'none', cursor: 'pointer' }}>
-            {GENRES.map(g => <option key={g}>{g}</option>)}
-          </select>
-          <select value={size} onChange={e => setSize(e.target.value)} style={{ flex: '0 1 160px', padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e5e5', fontSize: 14, background: 'white', outline: 'none', cursor: 'pointer' }}>
-            {SIZES.map(s => <option key={s}>{s}</option>)}
-          </select>
-        </div>
 
-        {!loading && (
-          <p style={{ fontSize: 13, color: '#aaa', marginBottom: 20 }}>
-            {filtered.length} {filtered.length === 1 ? 'costume' : 'costumes'} found
-            {listingTab === 'rental' && ' available to rent'}
-            {listingTab === 'sale' && ' for sale'}
-          </p>
-        )}
+          {/* Details */}
+          <div className="md:w-1/2">
 
-        {loading && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-            {[...Array(8)].map((_, i) => (
-              <div key={i} style={{ borderRadius: 16, background: '#f2e8d5', height: 320 }} />
-            ))}
-          </div>
-        )}
+            {/* Listing type badge */}
+            <div style={{ marginBottom: 10 }}>
+              <span style={{
+                display: 'inline-block',
+                padding: '3px 10px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 700,
+                background: isRental ? '#e8f5e9' : '#fff5f7',
+                color: isRental ? '#2e7d32' : '#800020',
+                border: `1px solid ${isRental ? '#c8e6c9' : '#f5c2cc'}`,
+              }}>
+                {isRental ? '🔄 Available to Rent' : '🏷️ For Sale'}
+              </span>
+            </div>
 
-        {!loading && filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>{listingTab === 'rental' ? '🔄' : '👗'}</div>
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: '#4a0e2e', marginBottom: 8 }}>
-              {listingTab === 'rental' ? 'No rental costumes yet' : 'No costumes found'}
-            </h3>
-            <p style={{ color: '#888', fontSize: 14, marginBottom: 28 }}>
-              {listingTab === 'rental' ? 'Be the first to list a costume for rent!' : 'Try adjusting your filters or search.'}
-            </p>
-            <Link href="/list" style={{ background: '#800020', color: 'white', padding: '12px 28px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>List a Costume</Link>
-          </div>
-        )}
+            <h1 className="text-2xl font-bold mb-2" style={{ color: '#4a0e2e' }}>{listing.title}</h1>
 
-        {!loading && filtered.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-            {filtered.map(listing => {
-              const isRental = listing.listing_type === 'rental';
-              const images = listing.images || [];
-              return (
-                <Link key={listing.id} href={`/listings/${listing.id}`} style={{ textDecoration: 'none' }}>
-                  <div
-                    style={{ borderRadius: 16, overflow: 'hidden', background: 'white', boxShadow: '0 2px 12px rgba(74,14,46,0.07)', border: listing.featured ? '2px solid #c49a2a' : '1px solid #f0e8d8', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(74,14,46,0.13)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(74,14,46,0.07)'; }}
+            {/* Price display */}
+            {isRental ? (
+              <div style={{ marginBottom: 16 }}>
+                <p className="text-3xl font-bold" style={{ color: '#2e7d32' }}>
+                  ${listing.rental_price_per_week}
+                  <span className="text-sm font-normal text-gray-400"> NZD/week</span>
+                </p>
+                {listing.rental_bond && (
+                  <p style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
+                    + ${listing.rental_bond} NZD bond (refundable)
+                  </p>
+                )}
+                {listing.rental_min_weeks && listing.rental_min_weeks > 1 && (
+                  <p style={{ fontSize: 13, color: '#666', marginTop: 2 }}>
+                    Minimum rental: {listing.rental_min_weeks} weeks
+                  </p>
+                )}
+                {listing.rental_availability_notes && (
+                  <p style={{ fontSize: 13, color: '#888', marginTop: 4, fontStyle: 'italic' }}>
+                    📅 {listing.rental_availability_notes}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-3xl font-bold mb-4" style={{ color: '#800020' }}>
+                ${listing.price}
+                <span className="text-sm font-normal text-gray-400"> NZD</span>
+              </p>
+            )}
+
+            {/* Seller info */}
+            <div className="flex items-center gap-3 mb-6 p-3 rounded-xl" style={{ backgroundColor: '#f2e8d5' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#800020' }}>
+                {sellerName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#4a0e2e' }}>{sellerName}</p>
+                {(seller?.location || listing.location) && (
+                  <p className="text-xs text-gray-500">📍 {seller?.location || listing.location}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Details grid */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {listing.genre && (
+                <div className="p-3 rounded-lg bg-white">
+                  <p className="text-xs text-gray-400 mb-1">Genre</p>
+                  <p className="text-sm font-semibold" style={{ color: '#4a0e2e' }}>{listing.genre}</p>
+                </div>
+              )}
+              {listing.size && (
+                <div className="p-3 rounded-lg bg-white">
+                  <p className="text-xs text-gray-400 mb-1">Size</p>
+                  <p className="text-sm font-semibold" style={{ color: '#4a0e2e' }}>{listing.size}</p>
+                </div>
+              )}
+              {listing.condition && (
+                <div className="p-3 rounded-lg bg-white">
+                  <p className="text-xs text-gray-400 mb-1">Condition</p>
+                  <p className="text-sm font-semibold" style={{ color: '#4a0e2e' }}>{listing.condition}</p>
+                </div>
+              )}
+              {listing.location && (
+                <div className="p-3 rounded-lg bg-white">
+                  <p className="text-xs text-gray-400 mb-1">Location</p>
+                  <p className="text-sm font-semibold" style={{ color: '#4a0e2e' }}>{listing.location}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            {listing.description && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold mb-2" style={{ color: '#4a0e2e' }}>Description</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{listing.description}</p>
+              </div>
+            )}
+
+            {/* Enquiry sent confirmation */}
+            {enquirySent && (
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: '#f0f9f4', border: '1px solid #c3e6d4', marginBottom: 16 }}>
+                <p style={{ fontSize: 13, color: '#2d6a4f', fontWeight: 600 }}>✅ Enquiry sent! The seller will be in touch.</p>
+              </div>
+            )}
+
+            {/* CTA buttons */}
+            <div className="flex flex-col gap-3">
+              {isRental ? (
+                <>
+                  {/* Primary: Enquire to Rent */}
+                  <button
+                    onClick={() => setEnquiryOpen(true)}
+                    className="w-full py-3 rounded-xl text-white font-semibold text-sm"
+                    style={{ backgroundColor: '#2e7d32', fontSize: 15 }}
                   >
-                    <div style={{ aspectRatio: '1', backgroundColor: '#f2e8d5', position: 'relative', overflow: 'hidden' }}>
-                      {images.length > 0
-                        ? <img src={images[0]} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>👗</div>
-                      }
-                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {listing.featured && <span style={{ background: '#c49a2a', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>⭐ Featured</span>}
-                        {isRental && <span style={{ background: '#2e7d32', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>🔄 Rent</span>}
-                        {!isRental && <span style={{ background: '#800020', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>🏷️ Sale</span>}
-                      </div>
-                    </div>
+                    🔄 Enquire to Rent
+                  </button>
+                  {/* Secondary: Message Seller */}
+                  <button
+                    className="w-full py-3 rounded-xl font-semibold text-sm border"
+                    style={{ borderColor: '#800020', color: '#800020', backgroundColor: 'transparent' }}
+                    onClick={() => setEnquiryOpen(true)}
+                  >
+                    Message Seller
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="w-full py-3 rounded-xl text-white font-semibold text-sm"
+                    style={{ backgroundColor: '#c49a2a' }}
+                  >
+                    Message Seller
+                  </button>
+                  <button
+                    className="w-full py-3 rounded-xl font-semibold text-sm border"
+                    style={{ borderColor: '#800020', color: '#800020', backgroundColor: 'transparent' }}
+                  >
+                    Buy Now — ${listing.price} NZD
+                  </button>
+                </>
+              )}
+            </div>
 
-                    <div style={{ padding: '14px 16px' }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: '#4a0e2e', marginBottom: 4, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        {listing.title}
-                      </h3>
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-                        {listing.genre && <span style={{ fontSize: 11, color: '#888', background: '#f5f0ea', padding: '2px 8px', borderRadius: 10 }}>{listing.genre}</span>}
-                        {listing.size && <span style={{ fontSize: 11, color: '#888', background: '#f5f0ea', padding: '2px 8px', borderRadius: 10 }}>{listing.size}</span>}
-                      </div>
-                      {isRental ? (
-                        <div>
-                          <p style={{ fontSize: 16, fontWeight: 800, color: '#2e7d32' }}>
-                            ${listing.rental_price_per_week}
-                            <span style={{ fontSize: 11, fontWeight: 500, color: '#888' }}> NZD/wk</span>
-                          </p>
-                          {listing.rental_min_weeks > 1 && <p style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>Min. {listing.rental_min_weeks} wks</p>}
-                        </div>
-                      ) : (
-                        <p style={{ fontSize: 16, fontWeight: 800, color: '#800020' }}>
-                          ${listing.price}
-                          <span style={{ fontSize: 11, fontWeight: 500, color: '#888' }}> NZD</span>
-                        </p>
-                      )}
-                      {listing.location && <p style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>📍 {listing.location}</p>}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {/* Rental how-it-works note */}
+            {isRental && (
+              <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 10, background: '#f9f9f9', border: '1px solid #eee' }}>
+                <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#4a0e2e' }}>How renting works:</strong> Send an enquiry and the seller will contact you to confirm availability, arrange pick-up/return, and organise payment directly.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Enquiry Modal */}
+      {enquiryOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '0 16px' }}
+          onClick={e => { if (e.target === e.currentTarget) setEnquiryOpen(false); }}
+        >
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, width: '100%', maxWidth: 460, position: 'relative' }}>
+            <button onClick={() => setEnquiryOpen(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#aaa' }}>✕</button>
+
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🔄</div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#4a0e2e', marginBottom: 4 }}>Enquire to Rent</h2>
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
+              <strong style={{ color: '#4a0e2e' }}>{listing.title}</strong> — ${listing.rental_price_per_week} NZD/week
+            </p>
+
+            <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#4a0e2e' }}>Your name</label>
+                <input
+                  required
+                  value={enquiryName}
+                  onChange={e => setEnquiryName(e.target.value)}
+                  placeholder="Jane Smith"
+                  style={{ width: '100%', border: '1px solid #e5e5e5', borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#4a0e2e' }}>Your email</label>
+                <input
+                  required
+                  type="email"
+                  value={enquiryEmail}
+                  onChange={e => setEnquiryEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                  style={{ width: '100%', border: '1px solid #e5e5e5', borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#4a0e2e' }}>Message</label>
+                <textarea
+                  required
+                  value={enquiryMessage}
+                  onChange={e => setEnquiryMessage(e.target.value)}
+                  rows={4}
+                  placeholder={`Hi, I'm interested in renting this costume. When is it available?`}
+                  style={{ width: '100%', border: '1px solid #e5e5e5', borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <button
+                type="submit"
+                style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', background: '#2e7d32', color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginTop: 4 }}
+              >
+                Send Enquiry
+              </button>
+            </form>
+
+            <p style={{ fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 12 }}>
+              Your message will be sent directly to the costume owner.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
