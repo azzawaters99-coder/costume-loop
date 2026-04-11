@@ -8,6 +8,14 @@ const CONDITIONS = ["New with tags","Like new","Good","Fair"];
 const SIZES = ["Age 2-4","Age 4-6","Age 6-8","Age 8-10","Age 10-12","Age 12-14","Adult XS","Adult S","Adult M","Adult L","Adult XL"];
 const STEPS = ["Details","Photos","Pricing","Shipping","Review"];
 
+const MEASUREMENTS = [
+  { key: "chest",   label: "Chest",   hint: "Fullest part of chest" },
+  { key: "waist",   label: "Waist",   hint: "Narrowest part" },
+  { key: "hips",    label: "Hips",    hint: "Fullest part of hips" },
+  { key: "height",  label: "Height",  hint: "Head to toe" },
+  { key: "inseam",  label: "Inseam",  hint: "Crotch to ankle" },
+];
+
 export default function ListPage() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -28,6 +36,11 @@ export default function ListPage() {
     shipping: "both",
     location: "",
     featured: false,
+    measureChest: "",
+    measureWaist: "",
+    measureHips: "",
+    measureHeight: "",
+    measureInseam: "",
   });
   const [done, setDone] = useState(false);
 
@@ -64,6 +77,11 @@ export default function ListPage() {
       featured: form.featured,
       status: "active",
       price: isRental ? (parseFloat(form.rentalPricePerWeek) || 0) : (parseFloat(form.price) || 0),
+      measure_chest: form.measureChest ? parseFloat(form.measureChest) : null,
+      measure_waist: form.measureWaist ? parseFloat(form.measureWaist) : null,
+      measure_hips: form.measureHips ? parseFloat(form.measureHips) : null,
+      measure_height: form.measureHeight ? parseFloat(form.measureHeight) : null,
+      measure_inseam: form.measureInseam ? parseFloat(form.measureInseam) : null,
     };
     if (isRental) {
       insertData.rental_price_per_week = parseFloat(form.rentalPricePerWeek) || 0;
@@ -101,7 +119,7 @@ export default function ListPage() {
   return (
     <div style={{maxWidth:600,margin:"0 auto",padding:"40px 24px"}}>
       <h1 style={{fontSize:26,fontWeight:800,color:"#4a0e2e",marginBottom:4}}>List a Costume</h1>
-      <p style={{color:"#aaa",fontSize:14,marginBottom:32}}>Step {step+1} of {STEPS.length} &mdash; {STEPS[step]}</p>
+      <p style={{color:"#aaa",fontSize:14,marginBottom:32}}>Step {step+1} of {STEPS.length} - {STEPS[step]}</p>
       <div style={{display:"flex",alignItems:"center",marginBottom:40}}>
         {STEPS.map((s,i)=>[
           <div key={s} style={{width:32,height:32,borderRadius:"50%",background:i<=step?"#800020":"#e5e5e5",color:i<=step?"white":"#aaa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{i+1}</div>,
@@ -130,7 +148,37 @@ export default function ListPage() {
           </div>
           <div><label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Title</label><input value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. White Ballet Tutu - Age 8" style={inp}/></div>
           <div><label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Genre</label><select value={form.genre} onChange={e=>set("genre",e.target.value)} style={{...inp,background:"white"}}><option value="">Select...</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select></div>
-          <div><label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Size</label><select value={form.size} onChange={e=>set("size",e.target.value)} style={{...inp,background:"white"}}><option value="">Select...</option>{SIZES.map(s=><option key={s}>{s}</option>)}</select></div>
+          <div><label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Approx. Size</label><select value={form.size} onChange={e=>set("size",e.target.value)} style={{...inp,background:"white"}}><option value="">Select...</option>{SIZES.map(s=><option key={s}>{s}</option>)}</select></div>
+
+          {/* Measurements */}
+          <div style={{background:"#faf7f2",border:"1px solid #e8dcc8",borderRadius:12,padding:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <span style={{fontSize:18}}>📏</span>
+              <label style={{fontWeight:700,fontSize:15,color:"#4a0e2e"}}>Measurements <span style={{fontWeight:400,color:"#aaa",fontSize:13}}>(cm, optional)</span></label>
+            </div>
+            <p style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>Accurate measurements help buyers find the right fit. Leave blank if unknown.</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              {MEASUREMENTS.map(m=>(
+                <div key={m.key}>
+                  <label style={{display:"block",fontSize:13,fontWeight:600,color:"#4a0e2e",marginBottom:4}}>{m.label}</label>
+                  <div style={{position:"relative"}}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="200"
+                      value={form["measure"+m.key.charAt(0).toUpperCase()+m.key.slice(1)]}
+                      onChange={e=>set("measure"+m.key.charAt(0).toUpperCase()+m.key.slice(1),e.target.value)}
+                      placeholder="cm"
+                      style={{...inp,paddingRight:36,fontSize:13,padding:"9px 36px 9px 12px"}}
+                    />
+                    <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"#bbb",pointerEvents:"none"}}>cm</span>
+                  </div>
+                  <p style={{fontSize:11,color:"#bbb",marginTop:3}}>{m.hint}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label style={{display:"block",fontWeight:600,fontSize:14,marginBottom:8}}>Condition</label>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -227,6 +275,13 @@ export default function ListPage() {
                 ["Sale price","$"+(form.price||"0")+" NZD"],
               ]),
               ["Shipping",form.shipping],["Location",form.location||"--"],["Featured",form.featured?"⭐ Yes (+$5 NZD)":"No"],
+              ...(form.measureChest||form.measureWaist||form.measureHips||form.measureHeight||form.measureInseam ? [
+                ["Chest",form.measureChest?form.measureChest+"cm":"--"],
+                ["Waist",form.measureWaist?form.measureWaist+"cm":"--"],
+                ["Hips",form.measureHips?form.measureHips+"cm":"--"],
+                ["Height",form.measureHeight?form.measureHeight+"cm":"--"],
+                ["Inseam",form.measureInseam?form.measureInseam+"cm":"--"],
+              ] : []),
             ].map(([k,v])=>(
               <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f5f5f5",fontSize:14}}>
                 <span style={{color:"#aaa"}}>{k}</span>
