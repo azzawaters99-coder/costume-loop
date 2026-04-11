@@ -287,7 +287,7 @@ function LoginForm() {
 
             {mode === 'login' && !resetMode && (
               <p className="text-center text-sm mt-4">
-                <button onClick={() => setResetMode(true)}
+                <button onClick={() => { setResetMode(true); setError(''); setMessage(''); }}
                   className="hover:underline" style={{ color: '#800020', background: 'none', border: 'none', cursor: 'pointer' }}>
                   Forgot your password?
                 </button>
@@ -296,7 +296,7 @@ function LoginForm() {
 
             {resetMode && (
               <p className="text-center text-sm mt-4">
-                <button onClick={() => setResetMode(false)}
+                <button onClick={() => { setResetMode(false); setError(''); setMessage(''); }}
                   className="hover:underline" style={{ color: '#800020', background: 'none', border: 'none', cursor: 'pointer' }}>
                   &#x2190; Back to Sign In
                 </button>
