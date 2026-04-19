@@ -3,15 +3,15 @@ import { useState } from "react";
 const FAQS = {
   Buying:[
     {q:"How do I find the right costume?",a:"Use the search filters to narrow by dance genre, size, age group, colour, and price range."},
-    {q:"Is my payment secure?",a:"Yes. All payments are processed through Stripe. Your payment details are never shared with the seller."},
-    {q:"What if the costume is not as described?",a:"Contact us within 48 hours of receiving the item and we will help resolve it."},
+    {q:"How do payments work?",a:"The Costume Loop is a marketplace, not a payment processor. You arrange payment directly with the seller using their preferred method (typically bank transfer). We recommend paying only once you have confirmed details with the seller and feel comfortable going ahead."},
+    {q:"What if the costume is not as described?",a:"Contact the seller first to resolve it directly. If you cannot reach an agreement, email us at hello@thecostumeloop.co.nz within 48 hours of receiving the item and we will do our best to help."},
     {q:"Can I try before buying?",a:"If the seller offers local pickup, you may be able to arrange a try-on."}
   ],
   Selling:[
-    {q:"How much does it cost to list?",a:"Nothing. It is completely free to list. We only charge a small commission when your costume sells."},
+    {q:"How much does it cost to list?",a:"Listing a costume is free. You can optionally feature a listing for $5 NZD to give it priority placement for 7 days."},
     {q:"How do I price my costume?",a:"Pre-loved costumes typically sell for 30-60% of their original price."},
-    {q:"How do I get paid?",a:"Once the buyer confirms receipt, payment is released to your nominated bank account."},
-    {q:"How should I ship?",a:"Use a tracked courier service and pack carefully to avoid damage."}
+    {q:"How do I get paid?",a:"Buyers pay you directly. Most sellers use bank transfer once they have agreed details with the buyer. The Costume Loop does not handle payments between users."},
+    {q:"How should I ship?",a:"Use a tracked courier service and pack carefully to avoid damage. Costumes should be sent within 3 working days of payment."}
   ],
   Studios:[
     {q:"Can our studio have its own page?",a:"Yes. Studios can create a branded storefront. Contact us to get set up."},
@@ -19,7 +19,7 @@ const FAQS = {
   ],
   General:[
     {q:"Which countries do you cover?",a:"Currently Australia and New Zealand, with plans to expand."},
-    {q:"How do I contact you?",a:"Email us at hello@thecostumeloop.com anytime."}
+    {q:"How do I contact you?",a:"Email us at hello@thecostumeloop.co.nz anytime."}
   ]
 };
 function Item({q,a}){

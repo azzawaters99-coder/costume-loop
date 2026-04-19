@@ -49,7 +49,7 @@ export default function Footer() {
         {/* Contact */}
         <div>
           <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Get in Touch</h4>
-          <a href="mailto:hello@thecostumeloop.com" style={{ fontSize: 13, color: '#999', textDecoration: 'none', display: 'block', marginBottom: 8 }}>hello@thecostumeloop.com</a>
+          <a href="mailto:hello@thecostumeloop.co.nz" style={{ fontSize: 13, color: '#999', textDecoration: 'none', display: 'block', marginBottom: 8 }}>hello@thecostumeloop.co.nz</a>
           <p style={{ fontSize: 13, color: '#999' }}>Built by dance parents, for dance families.</p>
         </div>
 

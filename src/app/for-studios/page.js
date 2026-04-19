@@ -13,6 +13,6 @@ export default function ForStudios(){return(<>
   <section style={{padding:"72px 24px",textAlign:"center",background:"radial-gradient(ellipse at 50% 50%, #9b2847 0%, #4a0e2e 100%)"}}>
     <h2 style={{fontSize:"clamp(1.6rem,3vw,2.2rem)",fontWeight:800,color:"white",marginBottom:16}}>Partner with The Costume Loop</h2>
     <p style={{color:"rgba(255,255,255,0.75)",maxWidth:440,margin:"0 auto 36px",lineHeight:1.75}}>Free, easy, and your families will thank you.</p>
-    <a href="mailto:hello@thecostumeloop.com" style={{display:"inline-block",background:"#e8a838",color:"#4a0e2e",fontWeight:700,padding:"15px 36px",borderRadius:10,textDecoration:"none",fontSize:16}}>Get in Touch</a>
+    <a href="mailto:hello@thecostumeloop.co.nz" style={{display:"inline-block",background:"#e8a838",color:"#4a0e2e",fontWeight:700,padding:"15px 36px",borderRadius:10,textDecoration:"none",fontSize:16}}>Get in Touch</a>
   </section>
 </>);}

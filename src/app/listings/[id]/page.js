@@ -26,12 +26,12 @@ export default function ListingDetail() {
     if (!id) return;
     async function fetchListing() {
       setLoading(true);
-      const { data, error } = await supabase.from('listings').select('*').eq('id', id).single();
+      const { data, error } = await supabase.from('listings').select('*').eq('id', id).maybeSingle();
       if (error) { console.error(error); setLoading(false); return; }
       setListing(data);
       if (data?.user_id) {
         const { data: profile } = await supabase.from('profiles')
-          .select('full_name, email, location').eq('id', data.user_id).single();
+          .select('full_name, email, location').eq('id', data.user_id).maybeSingle();
         setSeller(profile || { full_name: data.seller_name || 'Costume Loop Seller' });
       }
       setLoading(false);

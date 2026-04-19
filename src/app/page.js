@@ -10,11 +10,11 @@ const genres=[
   {n:'Musical Theatre',d:'Show-stopping stage costumes',e:'🎭'}
 ];
 
-const steps=[{n:'1',t:'List Your Costume',d:'Snap photos, add genre, size, condition and set your price.'},{n:'2',t:'Discover & Search',d:'Browse by genre, size, or keyword.'},{n:'3',t:'Secure Checkout',d:'Pay safely through our protected payment system.'},{n:'4',t:'Ship or Collect',d:'Arrange delivery or local pick-up.'}];
+const steps=[{n:'1',t:'List Your Costume',d:'Snap photos, add genre, size, condition and set your price.'},{n:'2',t:'Discover & Search',d:'Browse by genre, size, or keyword.'},{n:'3',t:'Connect with the Seller',d:'Message the seller to ask questions and agree on payment and delivery.'},{n:'4',t:'Ship or Collect',d:'Arrange delivery or local pick-up directly with the other party.'}];
 
 const studios=[{t:'Bulk Listing Tools',d:'List multiple costumes at once with batch uploads.'},{t:'Studio Storefront',d:'Branded page so parents can browse and buy directly.'},{t:'Parent Communication',d:'Share your link before concert season.'},{t:'Fundraising Potential',d:'Turn old costumes into funds for new ones.'},{t:'Sustainability Champion',d:'Show your community reuse can be beautiful.'},{t:'Community Connection',d:'Connect with studios across AU and NZ.'}];
 
-const trust=[{t:'Safe and Secure',d:'Every transaction protected with secure payments.'},{t:'Community First',d:'Built by dance parents who understand the costume cycle.'},{t:'Sustainable by Design',d:'Every costume resold is one less going to landfill.'}];
+const trust=[{t:'Honest & Direct',d:'A simple community marketplace — no hidden fees or complicated checkout.'},{t:'Community First',d:'Built by dance parents who understand the costume cycle.'},{t:'Sustainable by Design',d:'Every costume resold is one less going to landfill.'}];
 
 export default function Home(){return(<>
   <section style={{minHeight:580,display:'flex',alignItems:'center',justifyContent:'center',textAlign:'center',padding:'60px 24px',background:'radial-gradient(ellipse at 70% 40%, #9b2847 0%, #800020 40%, #4a0e2e 100%)',position:'relative',overflow:'hidden'}}>
@@ -27,7 +27,7 @@ export default function Home(){return(<>
   </section>
 
   <div style={{background:'#e8dcc8',display:'grid',gridTemplateColumns:'repeat(3,1fr)'}}>
-    {[{t:'Verified Sellers',d:'Every seller verified for trust and quality'},{t:'Secure Payments',d:'Protected transactions on every purchase'},{t:'AU and NZ Wide',d:'Connecting dancers across Australia and New Zealand'}].map((b,i)=>(
+    {[{t:'Dance Parent Community',d:'Built by dance parents who know the costume cycle'},{t:'Direct with the Seller',d:'Agree payment and delivery directly — no middle-man'},{t:'AU and NZ Wide',d:'Connecting dancers across Australia and New Zealand'}].map((b,i)=>(
       <div key={b.t} style={{padding:'28px 32px',textAlign:'center',borderRight:i<2?'1px solid #f2e8d5':'none'}}>
         <div style={{fontWeight:700,color:'#4a0e2e',fontSize:15,marginBottom:6}}>{b.t}</div>
         <div style={{fontSize:13,color:'#777'}}>{b.d}</div>
