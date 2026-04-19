@@ -54,7 +54,7 @@ function LoginForm() {
 
     if (resetMode) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/login',
+        redirectTo: window.location.origin + '/reset-password',
       });
       if (error) setError(error.message);
       else setMessage('Done! Check your email for a reset link.');

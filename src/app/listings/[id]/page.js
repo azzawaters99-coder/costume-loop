@@ -120,8 +120,36 @@ export default function ListingDetail() {
 
   const inp = { width: '100%', border: '1px solid #e5e5e5', borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' };
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: listing.title,
+    description: (listing.description || `Pre-loved ${listing.genre || 'dance'} costume in ${listing.condition || 'good'} condition${listing.size ? `, size ${listing.size}` : ''}.`).slice(0, 5000),
+    image: images.length > 0 ? images : undefined,
+    category: listing.genre,
+    itemCondition: (() => {
+      const c = (listing.condition || '').toLowerCase();
+      if (c.includes('new with tags')) return 'https://schema.org/NewCondition';
+      if (c.includes('like new')) return 'https://schema.org/NewCondition';
+      if (c.includes('good')) return 'https://schema.org/UsedCondition';
+      if (c.includes('fair')) return 'https://schema.org/UsedCondition';
+      return 'https://schema.org/UsedCondition';
+    })(),
+    offers: {
+      '@type': 'Offer',
+      price: isRental ? listing.rental_price_per_week : listing.price,
+      priceCurrency: 'NZD',
+      availability: listing.status === 'sold'
+        ? 'https://schema.org/SoldOut'
+        : 'https://schema.org/InStock',
+      url: typeof window !== 'undefined' ? window.location.href : `https://www.thecostumeloop.co.nz/listings/${listing.id}`,
+      seller: { '@type': 'Person', name: sellerName },
+    },
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#faf7f2' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         <Link href="/browse" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: '#800020', textDecoration: 'none' }}>
