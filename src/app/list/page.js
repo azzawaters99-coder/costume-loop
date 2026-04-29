@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-const GENRES = ["Ballet","Contemporary","Jazz & Tap","Cultural & Character","Acrobatics","Hip Hop","Musical Theatre","Duos & Trios","Group Costumes"];
+const GENRES = ["Ballet","Contemporary","Jazz","Tap","Cultural & Character","Acrobatics","Hip Hop","Musical Theatre","Duos & Trios","Group Costumes"];
 const CONDITIONS = ["New with tags","Like new","Good","Fair"];
 const SIZES = ["Age 2-4","Age 4-6","Age 6-8","Age 8-10","Age 10-12","Age 12-14","Adult XS","Adult S","Adult M","Adult L","Adult XL"];
 
@@ -193,6 +193,22 @@ export default function ListPage() {
     </div>
   );
 
+  if (!user.email_confirmed_at) return (
+    <div style={{maxWidth:480,margin:"80px auto",textAlign:"center",padding:"0 24px"}}>
+      <div style={{fontSize:64,marginBottom:24}}>📧</div>
+      <h1 style={{fontSize:28,fontWeight:800,color:"#4a0e2e",marginBottom:16}}>Please confirm your email</h1>
+      <p style={{color:"#888",marginBottom:16,lineHeight:1.7}}>We've sent a confirmation link to <strong style={{color:"#4a0e2e"}}>{user.email}</strong>. Click it to verify your email before listing a costume.</p>
+      <p style={{color:"#aaa",fontSize:13,marginBottom:32}}>Can't find it? Check your spam folder.</p>
+      <button onClick={async () => {
+        const { error } = await supabase.auth.resend({ type: 'signup', email: user.email });
+        if (error) alert("Couldn't resend — please try again in a moment.");
+        else alert("Confirmation email sent! Check your inbox.");
+      }} style={{display:"inline-block",background:"#800020",color:"white",fontWeight:700,padding:"12px 28px",borderRadius:10,border:"none",fontSize:14,cursor:"pointer"}}>
+        Resend confirmation email
+      </button>
+    </div>
+  );
+
   if (done) return (
     <div style={{maxWidth:480,margin:"80px auto",textAlign:"center",padding:"0 24px"}}>
       <div style={{fontSize:72,marginBottom:16}}>🎉</div>
@@ -261,7 +277,7 @@ export default function ListPage() {
           <div>
             <label style={{display:"block",fontWeight:700,fontSize:15,marginBottom:10,color:"#4a0e2e"}}>What are you doing with this costume?</label>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {[{val:"sale",label:"🏷️ Selling",sub:"One-off sale"},{val:"rental",label:"🔄 Renting Out",sub:"Lend by the week"}].map(opt=>(
+              {[{val:"sale",label:"🏷️ Selling",sub:"One-off sale"},{val:"rental",label:"🔄 Renting Out",sub:"Rent to other dancers"}].map(opt=>(
                 <button key={opt.val} onClick={()=>set("listingMode",opt.val)} style={{padding:"14px 12px",borderRadius:10,border:"2px solid",borderColor:form.listingMode===opt.val?"#800020":"#e5e5e5",background:form.listingMode===opt.val?"#fff5f7":"white",cursor:"pointer",textAlign:"left"}}>
                   <div style={{fontWeight:700,fontSize:14,color:"#4a0e2e"}}>{opt.label}</div>
                   <div style={{fontSize:12,color:"#999",marginTop:3}}>{opt.sub}</div>
@@ -397,8 +413,9 @@ export default function ListPage() {
           <div style={{marginTop:20,padding:"14px 16px",background:"#f0f9f4",borderRadius:10,border:"1px solid #c8e6d4"}}>
             <p style={{fontSize:13,fontWeight:600,color:"#2d6a4f",marginBottom:6}}>📸 Photo tips</p>
             <ul style={{fontSize:12,color:"#555",lineHeight:1.8,paddingLeft:18,margin:0}}>
+              <li><strong>Best of all — have a model wearing the costume</strong> so buyers can see how it fits</li>
               <li>Use natural daylight when possible</li>
-              <li>Lay flat or hang on a hanger for clarity</li>
+              <li>If no one's wearing it, lay flat or hang on a hanger for clarity</li>
               <li>Include close-ups of any wear, sequins or details</li>
               <li>A plain background makes colours pop</li>
             </ul>
