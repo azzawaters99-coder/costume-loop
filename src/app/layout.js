@@ -25,6 +25,7 @@ export const metadata = {
     description: 'Buy and sell second-hand dance costumes across New Zealand and Australia.',
   },
   robots: { index: true, follow: true },
+  verification: { google: '9dUwwzQwab4_mr75eqODBK6ISrElDSqM7aEdk1QG7Ic' },
 };
 
 export default function RootLayout({ children }) {
