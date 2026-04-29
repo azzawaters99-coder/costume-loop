@@ -32,7 +32,7 @@ export default function ListingDetail() {
       if (data?.user_id) {
         const { data: profile } = await supabase.from('profiles')
           .select('full_name, email, location').eq('id', data.user_id).maybeSingle();
-        setSeller(profile || { full_name: data.seller_name || 'Costume Loop Seller' });
+        setSeller(profile || { full_name: data.seller_name || 'Seller' });
       }
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function ListingDetail() {
   );
 
   const images = listing.images || [];
-  const sellerName = seller?.full_name || listing.seller_name || 'Costume Loop Seller';
+  const sellerName = seller?.full_name || listing.seller_name || 'Seller';
   const isRental = listing.listing_type === 'rental';
   const measurements = [
     { key: 'measure_chest',  label: 'Chest' },
