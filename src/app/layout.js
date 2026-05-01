@@ -1,4 +1,5 @@
 import './globals.css';
+import Script from 'next/script';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Analytics } from '@vercel/analytics/react';
@@ -9,11 +10,23 @@ export const metadata = {
     template: '%s | The Costume Loop',
     default: 'The Costume Loop — Second-Hand Dance Costumes NZ & AU',
   },
-  description: 'Buy and sell second-hand dance costumes across New Zealand and Australia. Affordable recital, competition and studio costumes for dancers of all ages.',
-  keywords: ['dance costumes', 'second-hand dance', 'pre-loved dance costumes', 'dance marketplace', 'ballet costumes', 'jazz costumes', 'New Zealand', 'Australia', 'dance parents'],
+  description:
+    'Buy and sell second-hand dance costumes across New Zealand and Australia. Affordable recital, competition and studio costumes for dancers of all ages.',
+  keywords: [
+    'dance costumes',
+    'second-hand dance',
+    'pre-loved dance costumes',
+    'dance marketplace',
+    'ballet costumes',
+    'jazz costumes',
+    'New Zealand',
+    'Australia',
+    'dance parents',
+  ],
   openGraph: {
     title: 'The Costume Loop — Second-Hand Dance Costumes NZ & AU',
-    description: 'Buy and sell second-hand dance costumes across New Zealand and Australia.',
+    description:
+      'Buy and sell second-hand dance costumes across New Zealand and Australia.',
     url: 'https://www.thecostumeloop.co.nz',
     siteName: 'The Costume Loop',
     locale: 'en_NZ',
@@ -22,7 +35,8 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'The Costume Loop — Second-Hand Dance Costumes NZ & AU',
-    description: 'Buy and sell second-hand dance costumes across New Zealand and Australia.',
+    description:
+      'Buy and sell second-hand dance costumes across New Zealand and Australia.',
   },
   robots: { index: true, follow: true },
   verification: { google: '9dUwwzQwab4_mr75eqODBK6ISrElDSqM7aEdk1QG7Ic' },
@@ -31,7 +45,26 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang='en'>
-      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#faf7f2' }}>
+      <body
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          backgroundColor: '#faf7f2',
+        }}
+      >
+        <Script
+          src='https://www.googletagmanager.com/gtag/js?id=G-6GPMZENWDT'
+          strategy='afterInteractive'
+        />
+        <Script id='ga-init' strategy='afterInteractive'>
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-6GPMZENWDT');
+          `}
+        </Script>
         <Navbar />
         <main style={{ flex: 1 }}>{children}</main>
         <Footer />
